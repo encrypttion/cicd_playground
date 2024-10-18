@@ -18,54 +18,98 @@ are welcome.
 The application is known to run successfully on MacOS. Other platforms are
 untested, but if you can get the system dependencies to build, `fm` should work.
 
-## Hacking
-
-`fm` is a Rust project that utilizes [GTK 4][install-gtk],
-[libpanel][install-libpanel], [GtkSourceView][install-gtksourceview], and
-[libadwaita][install-libadwaita].
-
-1. First, [install Rust and Cargo][install-rust].
-
-2. Install system dependencies.
-
-    Note that libpanel is alpha software and may not be packaged for your
-    system. In that case, you can build it from source, install it, and then
-    build `fm` with the `PKG_CONFIG_PATH` environment variable set to
-    `PKG_CONFIG_PATH="/path/to/libpanel/lib/pkgconfig:$PKG_CONFIG_PATH"`.
-
-    #### Arch Linux
-
-    ```sh
-    $ pacman -Syu gtk4 libadwaita libpanel-git gtksourceview5
-    ```
-
-    #### Fedora
-
-    ```
-    $ dnf install -y gtk4 libadwaita-devel libpanel
-    ```
-
-    #### openSUSE
-
-    ```sh
-    $ zypper in glib2-devel pango-devel gtk4-devel libadwaita-devel libpanel-devel gtksourceview5-devel libpoppler-glib-devel
-    ```
-
-3. Build and run the application.
-
-    ```sh
-    $ cargo run
-    ```
-
-## License
-
-`fm` is licensed under the MIT license.
-
-[Miller columns]: https://en.wikipedia.org/wiki/Miller_columns
-[install-rust]: https://www.rust-lang.org/tools/install
-[install-gtk]: https://www.gtk.org/docs/installations/
-[install-gtksourceview]: https://wiki.gnome.org/Projects/GtkSourceView
-[install-libadwaita]: https://gnome.pages.gitlab.gnome.org/libadwaita/
-[install-libpanel]: https://gitlab.gnome.org/chergert/libpanel
-[Relm4]: https://aaronerhardt.github.io/relm4-book/book/
 # cicd_playground
+
+## Setting up GitHub Actions for your cross-platform Rust application to build and test the application on multiple operating systems.
+
+1. Create a new directory in your repository:
+   In the root of your repository, create a new directory structure: `.github/workflows/`
+
+2. Create a new YAML file:
+   In the `.github/workflows/` directory, create a new file named `ci.yml`. This file will contain your workflow configuration.
+
+3. Configure your workflow:
+   Here's a basic GitHub Actions workflow for a Rust project:
+
+```yaml
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        rust: [stable]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+        components: rustfmt, clippy
+
+    - name: Build
+      run: cargo build --verbose
+
+    - name: Run tests
+      run: cargo test --verbose
+
+    - name: Check formatting
+      run: cargo fmt -- --check
+
+    - name: Run clippy
+      run: cargo clippy -- -D warnings
+```
+
+### Now, let's break down this configuration:
+
+The workflow is triggered on pushes and pull requests to the main branch.
+It uses a matrix strategy to run the job on Ubuntu, Windows, and macOS.
+The job performs these steps:
+
+- Checks out your code
+- Installs Rust
+- Builds your project
+- Runs tests
+- Checks code formatting
+- Runs the Clippy linter
+
+Commit and push:
+Add this file to your repository, commit, and push to GitHub.
+
+View the results:
+
+1. Go to your GitHub repository
+2. Click on the "Actions" tab
+3. You should see your workflow running (or completed if it's fast)
+
+Customize as needed:
+You might want to add additional steps such as:
+
+- Creating release artifacts
+- Deploying to staging/production
+- Running additional tests or checks
+
+Some additional tips:
+
+- read: https://blog.urth.org/2023/03/05/cross-compiling-rust-projects-in-github-actions/
+- read: https://dzfrias.dev/blog/deploy-rust-cross-platform-github-actions/
+- read: https://jondot.medium.com/building-rust-on-multiple-platforms-using-github-6f3e6f8b8458
+- read: https://reemus.dev/tldr/rust-cross-compilation-github-actions
+- You can use conditional steps if you need different behavior on different platforms.
+- For faster builds, consider caching dependencies. GitHub Actions provides a cache action for this purpose.
+- If you have longer-running tests, you might want to separate them into a different job or workflow.
