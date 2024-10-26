@@ -13,7 +13,7 @@ jobs:
   build:
     name: Build and test
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 120
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
@@ -34,18 +34,33 @@ jobs:
         override: true
         components: rustfmt, clippy
 
+    - name: Install system dependencies on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get update && sudo apt-get install -y libgdk3-dev
+
+    - name: Install system dependencies on Windows
+      if: matrix.os == 'windows-latest'
+      run: choco install pkgconfiglite --params "/NoAdmin" -y
+
+    - name: Install Homebrew dependencies on macOS
+      if: matrix.os == 'macOS-latest'
+      run: brew install pkg-config  # **Install dependencies for macOS**
+
+    - name: Log before building
+      run: echo "Building the project..."
+
     - name: Build
-      working-directory: src-tauri  # **Set the working directory to src-tauri**
+      working-directory: src-tauri
       run: cargo build --verbose
 
     - name: Run tests
-      working-directory: src-tauri  # **Set the working directory to src-tauri**
+      working-directory: src-tauri
       run: cargo test --verbose
 
     - name: Check formatting
-      working-directory: src-tauri  # **Set the working directory to src-tauri**
+      working-directory: src-tauri
       run: cargo fmt -- --check
 
     - name: Run clippy
-      working-directory: src-tauri  # **Set the working directory to src-tauri**
+      working-directory: src-tauri
       run: cargo clippy -- -D warnings
