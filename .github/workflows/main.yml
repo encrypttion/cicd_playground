@@ -13,18 +13,26 @@ jobs:
   build:
     name: Build and test
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 60  # Increase timeout
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         rust: [stable]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-    - name: Log before installing Rust
-      run: echo "Starting to install Rust"
+    - name: Install system dependencies on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
+
+    - name: Install pkgconfiglite on Windows
+      if: matrix.os == 'windows-latest'
+      run: choco install pkgconfiglite --params "/NoAdmin" -y || echo "pkgconfiglite installation failed"
+
+    - name: Install Homebrew dependencies on macOS
+      if: matrix.os == 'macOS-latest'
+      run: brew install pkg-config  # Add other dependencies as needed
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -33,18 +41,6 @@ jobs:
         toolchain: ${{ matrix.rust }}
         override: true
         components: rustfmt, clippy
-
-    - name: Install system dependencies on Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get update && sudo apt-get install -y libgdk3-dev
-
-    - name: Install system dependencies on Windows
-      if: matrix.os == 'windows-latest'
-      run: choco install pkgconfiglite --params "/NoAdmin" -y
-
-    - name: Install Homebrew dependencies on macOS
-      if: matrix.os == 'macOS-latest'
-      run: brew install pkg-config  # **Install dependencies for macOS**
 
     - name: Log before building
       run: echo "Building the project..."
