@@ -13,20 +13,26 @@ jobs:
   build:
     name: Build and test
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30  # **Added timeout to avoid long-running jobs getting canceled**
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        rust: [stable]
+        rust: [stable]  # You may specify a version like '1.81.0' here if desired
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Log before installing Rust  # **Added logging step for better visibility**
+      run: echo "Starting to install Rust"
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: ${{ matrix.rust }}
         override: true
-        components: rustfmt, clippy
+        components: rustfmt, clippy  # Consider removing optional components for testing
 
     - name: Build
       run: cargo build --verbose
