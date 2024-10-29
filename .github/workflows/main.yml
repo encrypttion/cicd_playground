@@ -55,7 +55,7 @@ jobs:
 
     - name: Build
       working-directory: src-tauri
-      run: cargo build --verbose
+      run: cargo build --release --verbose
 
     - name: Run tests
       working-directory: src-tauri
@@ -68,3 +68,9 @@ jobs:
     - name: Run clippy
       working-directory: src-tauri
       run: cargo clippy -- -D warnings
+      
+    - name: Store Binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries-${{ matrix.os }}  # Unique name for each OS
+        path: src-tauri/target/release/*  # Adjust this path if necessary
